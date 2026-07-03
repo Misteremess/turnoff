@@ -43,7 +43,7 @@ export function Nav({ email }: { email: string | null }) {
   return (
     <>
       {/* Móvil: cabecera superior */}
-      <header className="sticky top-0 z-40 flex items-center justify-between border-b bg-white/80 px-4 py-2.5 backdrop-blur-md md:hidden dark:bg-slate-900/80">
+      <header className="app-nav-collapse sticky top-0 z-40 flex items-center justify-between border-b bg-white/80 px-4 py-2.5 backdrop-blur-md md:hidden dark:bg-slate-900/80">
         <div className="flex items-center gap-2.5">
           <Logo size="sm" />
           <div>
@@ -63,7 +63,7 @@ export function Nav({ email }: { email: string | null }) {
       </header>
 
       {/* Escritorio: sidebar */}
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r bg-white/60 px-4 py-8 backdrop-blur-md md:flex dark:bg-slate-900/60">
+      <aside className="app-nav-collapse sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r bg-white/60 px-4 py-8 backdrop-blur-md md:flex dark:bg-slate-900/60">
         <div className="mb-8 flex items-center gap-3 px-2">
           <Logo />
           <div>
@@ -119,7 +119,7 @@ export function Nav({ email }: { email: string | null }) {
 
       {/* Móvil: barra de pestañas inferior */}
       <nav
-        className="fixed inset-x-0 bottom-0 z-40 border-t bg-white/90 backdrop-blur-md md:hidden dark:bg-slate-900/90"
+        className="app-nav-collapse fixed inset-x-0 bottom-0 z-40 border-t bg-white/90 backdrop-blur-md md:hidden dark:bg-slate-900/90"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         <div className="grid grid-cols-3">

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, useTransition } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
@@ -45,6 +46,13 @@ function isConfirmed(p: PendingStamp, shifts: ShiftWithService[]): boolean {
   );
 }
 
+const subscribeNoop = () => () => {};
+
+/** true solo tras hidratar en el cliente; en el servidor no existe `document`. */
+function useIsClient() {
+  return useSyncExternalStore(subscribeNoop, () => true, () => false);
+}
+
 export function CalendarView({
   services,
   shifts,
@@ -58,20 +66,22 @@ export function CalendarView({
   const [brush, setBrush] = useState<Brush | null>(null);
   const [pending, setPending] = useState<PendingStamp[]>([]);
   const [, startTransition] = useTransition();
-  const calendarRef = useRef<FullCalendar | null>(null);
   const calendarWrapRef = useRef<HTMLDivElement | null>(null);
+  const [calHeight, setCalHeight] = useState(480);
 
-  // FullCalendar mide su contenedor al montar; en móvil, el layout flex
-  // aún puede no tener su altura definitiva en ese momento (p.ej. antes de
-  // que la barra del navegador se asiente), así que se queda con un tamaño
-  // incorrecto hasta que algo dispare un resize (como girar la pantalla).
-  // Con un ResizeObserver forzamos el recálculo en cuanto el contenedor
-  // tenga su tamaño real, sin depender de rotar el dispositivo.
+  // height="100%" en FullCalendar depende de que el contenedor tenga una
+  // altura CSS "definida", pero al venir de flex-grow + min-height en una
+  // cadena de flexbox, los navegadores no siempre la resuelven como
+  // porcentaje: el calendario se queda con la altura de su propio
+  // contenido (la cabecera) en vez de llenar la tarjeta, y por eso no se
+  // ve. Medimos el contenedor con ResizeObserver y le damos a FullCalendar
+  // un alto explícito en píxeles, que sí funciona de forma fiable.
   useEffect(() => {
     const el = calendarWrapRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => {
-      calendarRef.current?.getApi().updateSize();
+    const ro = new ResizeObserver((entries) => {
+      const h = entries[0]?.contentRect.height;
+      if (h) setCalHeight(h);
     });
     ro.observe(el);
     return () => ro.disconnect();
@@ -241,8 +251,21 @@ export function CalendarView({
       </header>
 
       {paintMode && (
-        <PaintPalette services={services} brush={brush} onPick={setBrush} onClose={togglePaint} />
+        <div className="landscape-hide">
+          <PaintPalette services={services} brush={brush} onPick={setBrush} onClose={togglePaint} />
+        </div>
       )}
+
+      {/* Móvil en horizontal: el menú de navegación se colapsa (ver
+          .app-nav-collapse) y en su lugar aparece esta barra compacta,
+          más accesible para pintar turnos con la poca altura disponible. */}
+      <LandscapePaintBar
+        services={services}
+        brush={brush}
+        onPick={setBrush}
+        paintMode={paintMode}
+        onTogglePaint={togglePaint}
+      />
 
       <div
         ref={calendarWrapRef}
@@ -252,7 +275,6 @@ export function CalendarView({
         )}
       >
         <FullCalendar
-          ref={calendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
           initialView="dayGridMonth"
           locale={esLocale}
@@ -263,7 +285,7 @@ export function CalendarView({
             right: "dayGridMonth,timeGridWeek,timeGridDay",
           }}
           buttonText={{ today: "Hoy", month: "Mes", week: "Semana", day: "Día" }}
-          height="100%"
+          height={calHeight}
           nowIndicator
           selectable={!paintMode}
           selectMirror
@@ -542,5 +564,101 @@ function PaintPalette({
         </>
       )}
     </div>
+  );
+}
+
+/**
+ * Barra compacta de "modo pintar" para móvil en horizontal: sustituye al
+ * menú de navegación (oculto por falta de altura) para que pintar turnos
+ * sea accesible con una sola mano sin tener que volver a vertical.
+ * Solo es visible vía CSS (.landscape-toolbar) en esa orientación.
+ */
+function LandscapePaintBar({
+  services,
+  brush,
+  onPick,
+  paintMode,
+  onTogglePaint,
+}: {
+  services: Service[];
+  brush: Brush | null;
+  onPick: (b: Brush | null) => void;
+  paintMode: boolean;
+  onTogglePaint: () => void;
+}) {
+  const [serviceId, setServiceId] = useState(brush?.serviceId ?? services[0]?.id ?? "");
+  const service = services.find((s) => s.id === serviceId) ?? null;
+
+  // El div raíz de CalendarView anima su entrada con "animate-rise"; una vez
+  // termina, deja un transform matriz (identidad) aplicado por el fill-mode
+  // de la animación, y eso convierte a ese div en el marco de referencia de
+  // cualquier "position: fixed" dentro de él (en vez del viewport). Por eso
+  // la barra necesita un portal directo a <body>.
+  const isClient = useIsClient();
+  if (!isClient) return null;
+
+  if (!paintMode) {
+    return createPortal(
+      <div className="landscape-toolbar fixed inset-x-0 bottom-0 z-40 border-t bg-white/95 backdrop-blur-md dark:bg-slate-900/95">
+        <button
+          onClick={onTogglePaint}
+          disabled={services.length === 0}
+          className="btn btn-primary w-full rounded-none py-3"
+        >
+          <Paintbrush size={16} /> Modo pintar
+        </button>
+      </div>,
+      document.body,
+    );
+  }
+
+  return createPortal(
+    <div className="landscape-toolbar fixed inset-x-0 bottom-0 z-40 items-center gap-1.5 overflow-x-auto border-t bg-white/95 px-2 py-1.5 backdrop-blur-md dark:bg-slate-900/95">
+      <button onClick={onTogglePaint} className="btn btn-outline shrink-0 px-2 py-1.5 text-xs" title="Salir del modo pintar">
+        <X size={14} />
+      </button>
+      {services.map((s) => {
+        const active = s.id === service?.id;
+        return (
+          <button
+            key={s.id}
+            onClick={() => {
+              setServiceId(s.id);
+              onPick(null);
+            }}
+            className={cn(
+              "shrink-0 rounded-lg border px-2 py-1.5 text-xs font-medium",
+              active ? "text-white" : "bg-white dark:bg-slate-800",
+            )}
+            style={active ? { background: s.color, borderColor: s.color } : { borderColor: "var(--border)" }}
+          >
+            {s.name}
+          </button>
+        );
+      })}
+      {service && service.templates.length > 0 && (
+        <span className="mx-1 h-5 w-px shrink-0 bg-[var(--border)]" />
+      )}
+      {service?.templates.map((t) => {
+        const active = brush?.template.id === t.id && brush?.serviceId === service.id;
+        return (
+          <button
+            key={t.id}
+            onClick={() =>
+              onPick({ serviceId: service.id, serviceName: service.name, color: service.color, template: t })
+            }
+            className={cn("shrink-0 rounded-lg border px-2 py-1.5 text-xs font-medium", active && "text-white")}
+            style={
+              active
+                ? { background: service.color, borderColor: service.color }
+                : { borderColor: service.color, color: service.color }
+            }
+          >
+            <span className="font-bold">{t.code}</span> {t.start}–{t.end}
+          </button>
+        );
+      })}
+    </div>,
+    document.body,
   );
 }
