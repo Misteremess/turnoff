@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
@@ -58,6 +58,24 @@ export function CalendarView({
   const [brush, setBrush] = useState<Brush | null>(null);
   const [pending, setPending] = useState<PendingStamp[]>([]);
   const [, startTransition] = useTransition();
+  const calendarRef = useRef<FullCalendar | null>(null);
+  const calendarWrapRef = useRef<HTMLDivElement | null>(null);
+
+  // FullCalendar mide su contenedor al montar; en móvil, el layout flex
+  // aún puede no tener su altura definitiva en ese momento (p.ej. antes de
+  // que la barra del navegador se asiente), así que se queda con un tamaño
+  // incorrecto hasta que algo dispare un resize (como girar la pantalla).
+  // Con un ResizeObserver forzamos el recálculo en cuanto el contenedor
+  // tenga su tamaño real, sin depender de rotar el dispositivo.
+  useEffect(() => {
+    const el = calendarWrapRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      calendarRef.current?.getApi().updateSize();
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const events = useMemo(() => {
     // Los turnos optimistas desaparecen cuando el servidor los confirma.
@@ -227,12 +245,14 @@ export function CalendarView({
       )}
 
       <div
+        ref={calendarWrapRef}
         className={cn(
           "card min-h-[480px] flex-1 p-3 transition-shadow duration-300 sm:p-4 md:min-h-[560px]",
           paintMode && "painting ring-2 ring-[var(--primary)] shadow-lg shadow-blue-500/10",
         )}
       >
         <FullCalendar
+          ref={calendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
           initialView="dayGridMonth"
           locale={esLocale}

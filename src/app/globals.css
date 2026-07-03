@@ -324,17 +324,10 @@
   padding-right: 0;
 }
 
-/* Mitad "Saliente" de un turno nocturno: rayado sutil + una capa translúcida
-   (--scrim) para que el color de fondo se vea con menos opacidad que el
-   tramo de entrada, marcando visualmente que es el día de salida. */
+/* Mitad "Saliente" de un turno nocturno: el color se desvanece hacia la
+   derecha (en vez de rayado), marcando visualmente que es el día de salida. */
 .fc-event .saliente-half {
-  background-image:
-    repeating-linear-gradient(
-      45deg,
-      rgb(255 255 255 / 0.28) 0 5px,
-      transparent 5px 10px
-    ),
-    linear-gradient(var(--scrim), var(--scrim));
+  background-image: linear-gradient(to right, transparent, var(--scrim) 90%);
   border-radius: 0 6px 6px 0;
   margin: -1px 0; /* cubre también el padding vertical del evento */
   padding-top: 1px;
