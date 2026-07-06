@@ -325,13 +325,20 @@
 }
 
 /* Mitad "Saliente" de un turno nocturno: el color se desvanece hacia la
-   derecha (en vez de rayado), marcando visualmente que es el día de salida. */
+   derecha (en vez de rayado), marcando visualmente que es el día de salida.
+   Además baja de opacidad para llamar mucho menos la atención que el turno
+   que sí empieza ese día; al pasar el ratón se recupera para poder leerla. */
 .fc-event .saliente-half {
   background-image: linear-gradient(to right, transparent, var(--scrim) 90%);
   border-radius: 0 6px 6px 0;
   margin: -1px 0; /* cubre también el padding vertical del evento */
   padding-top: 1px;
   padding-bottom: 1px;
+  opacity: 0.55;
+  transition: opacity 0.15s;
+}
+.fc-event:hover .saliente-half {
+  opacity: 0.9;
 }
 
 /* Modo pintar: cursor y feedback al pasar por los días */
@@ -357,8 +364,8 @@
     font-size: 0.72rem;
   }
   .fc-event {
-    font-size: 0.62rem;
-    padding: 0 2px;
+    font-size: 0.66rem;
+    padding: 0 1px;
   }
   .fc .fc-daygrid-day-frame {
     min-height: 3.8rem;

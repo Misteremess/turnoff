@@ -62,6 +62,7 @@ export function CalendarView({
 }) {
   const router = useRouter();
   const [draft, setDraft] = useState<ShiftDraft | null>(null);
+  const [dialogMode, setDialogMode] = useState<"view" | "edit">("edit");
   const [paintMode, setPaintMode] = useState(false);
   const [brush, setBrush] = useState<Brush | null>(null);
   const [pending, setPending] = useState<PendingStamp[]>([]);
@@ -135,6 +136,7 @@ export function CalendarView({
     start.setMinutes(0, 0, 0);
     const end = new Date(start);
     end.setHours(end.getHours() + 8);
+    setDialogMode("edit");
     setDraft({ starts_at: toLocalInput(start), ends_at: toLocalInput(end) });
   }
 
@@ -146,6 +148,7 @@ export function CalendarView({
   }
 
   function onSelect(arg: DateSelectArg) {
+    setDialogMode("edit");
     setDraft({ starts_at: toLocalInput(arg.start), ends_at: toLocalInput(arg.end) });
   }
 
@@ -190,6 +193,9 @@ export function CalendarView({
     if (paintMode) return; // pintando no se abren turnos, para no interrumpir
     const shift = shifts.find((s) => s.id === arg.event.id);
     if (!shift) return;
+    // Abrimos en modo vista: un simple clic para consultar el turno no debe
+    // poder cambiarlo por accidente. Hay que pulsar "Editar" a propósito.
+    setDialogMode("view");
     setDraft({
       id: shift.id,
       service_id: shift.service_id,
@@ -313,7 +319,14 @@ export function CalendarView({
         </div>
       )}
 
-      {draft && <ShiftDialog draft={draft} services={services} onClose={() => setDraft(null)} />}
+      {draft && (
+        <ShiftDialog
+          draft={draft}
+          services={services}
+          initialMode={dialogMode}
+          onClose={() => setDraft(null)}
+        />
+      )}
     </div>
   );
 }
@@ -323,6 +336,15 @@ function fmtTime(d: Date | null): string {
   return d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
 }
 
+/** Hora sin ceros de más ("8" en vez de "08:00", "7:30" si no es en punto):
+ * en la celda de un día del mes hay sitio para muy pocos caracteres. */
+function compactTime(d: Date | null): string {
+  if (!d) return "";
+  const h = d.getHours();
+  const m = d.getMinutes();
+  return m === 0 ? `${h}` : `${h}:${String(m).padStart(2, "0")}`;
+}
+
 function renderEvent(arg: EventContentArg) {
   const { event, isStart, isEnd, view } = arg;
   const xp = event.extendedProps as {
@@ -330,18 +352,25 @@ function renderEvent(arg: EventContentArg) {
     serviceName?: string;
     overnight?: boolean;
   };
-  const start = fmtTime(event.start);
-  const end = fmtTime(event.end);
-  const title = `${xp.serviceName ?? ""} · ${start}–${end}`;
   const isMonth = view.type === "dayGridMonth";
+  // El tooltip y la vista semana/día siempre muestran la hora completa; en
+  // la cuadrícula del mes, donde cada día apenas tiene unos pocos px de
+  // ancho, usamos el formato compacto para que quepan inicio Y fin.
+  const start = isMonth ? compactTime(event.start) : fmtTime(event.start);
+  const end = isMonth ? compactTime(event.end) : fmtTime(event.end);
+  const title = `${xp.serviceName ?? ""} · ${fmtTime(event.start)}–${fmtTime(event.end)}`;
 
   // Línea principal (código + horas) y debajo el servicio, para no confundir
-  // turnos de servicios distintos.
+  // turnos de servicios distintos. Si aun con el formato compacto no cupiera
+  // en pantallas muy estrechas, el propio `truncate` recorta el texto: el
+  // resto sigue disponible en el tooltip y en el detalle del turno (un toque).
   const body = (moon: boolean) => (
-    <div className="min-w-0 overflow-hidden px-0.5 leading-tight">
-      <div className="flex items-center gap-1">
+    <div className="min-w-0 overflow-hidden leading-tight">
+      <div className="flex items-center gap-0.5">
         {xp.code && <span className="font-bold">{xp.code}</span>}
-        <span className="truncate opacity-95">{start}–{end}</span>
+        <span className="truncate opacity-95">
+          {start}–{end}
+        </span>
         {moon && <span className="ml-auto">🌙</span>}
       </div>
       {xp.serviceName && (
@@ -352,18 +381,31 @@ function renderEvent(arg: EventContentArg) {
     </div>
   );
 
+  // Distintivo, muy discreto, del tramo "saliente" (día de salida de un
+  // turno nocturno): solo la hora de fin, para no competir visualmente con
+  // el turno que sí empieza ese día. En pantallas estrechas se omite incluso
+  // la palabra "Saliente" para dejarle todo el sitio a la hora.
+  const salienteLabel = (
+    <span className="truncate text-[0.85em] font-normal">
+      <span className="hidden sm:inline">Saliente </span>
+      {end}
+    </span>
+  );
+
   // Turno nocturno en vista mes: UNA barra continua que cruza los dos días;
   // la mitad derecha (día de salida) lleva el distintivo "Saliente" integrado.
   if (xp.overnight && isMonth) {
     // Barra completa (entrada y salida en la misma semana). Las dos mitades
     // van a ras (sin padding externo ni hueco) para que el rayado empiece
-    // exactamente en la frontera entre los dos días.
+    // exactamente en la frontera entre los dos días. La entrada (con el
+    // código y las horas) se lleva el doble de espacio: es el turno que
+    // importa ese día, la salida es solo informativa.
     if (isStart && isEnd) {
       return (
         <div className="flex w-full items-stretch overflow-hidden" title={`${title} (nocturno)`}>
-          <span className="min-w-0 flex-1 px-1">{body(true)}</span>
-          <span className="saliente-half flex min-w-0 flex-1 items-center justify-center gap-1 px-1.5">
-            🌙 <span className="truncate"><span className="font-bold">Saliente</span> {end}</span>
+          <span className="min-w-0 flex-[2] px-1">{body(true)}</span>
+          <span className="saliente-half flex min-w-0 flex-1 items-center justify-center px-1">
+            {salienteLabel}
           </span>
         </div>
       );
@@ -378,11 +420,8 @@ function renderEvent(arg: EventContentArg) {
     }
     // …y tramo de salida en la semana siguiente.
     return (
-      <div className="saliente-half flex items-center gap-1 overflow-hidden" title={`${title} (saliente de noche)`}>
-        <span>🌙</span>
-        <span className="truncate">
-          <span className="font-bold">Saliente</span> {end}
-        </span>
+      <div className="saliente-half flex items-center overflow-hidden px-1" title={`${title} (saliente de noche)`}>
+        {salienteLabel}
       </div>
     );
   }
