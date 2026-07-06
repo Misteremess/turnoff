@@ -225,7 +225,7 @@ export function CalendarView({
 
   return (
     <div className="animate-rise flex min-h-0 flex-1 flex-col">
-      <header className="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <header className="landscape-hide mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Calendario</h1>
           <p className="text-sm text-[var(--muted)]">
@@ -262,10 +262,11 @@ export function CalendarView({
         </div>
       )}
 
-      {/* Móvil en horizontal: el menú de navegación se colapsa (ver
-          .app-nav-collapse) y en su lugar aparece esta barra compacta,
-          más accesible para pintar turnos con la poca altura disponible. */}
-      <LandscapePaintBar
+      {/* Móvil en horizontal: el menú de navegación y la cabecera se colapsan
+          (ver .app-nav-collapse / .landscape-hide) y en su lugar aparece
+          este panel lateral izquierdo, para pintar turnos y ver el
+          calendario a la vez sin perder espacio en una barra superior. */}
+      <LandscapeSidebar
         services={services}
         brush={brush}
         onPick={setBrush}
@@ -361,9 +362,12 @@ function renderEvent(arg: EventContentArg) {
   const title = `${xp.serviceName ?? ""} · ${fmtTime(event.start)}–${fmtTime(event.end)}`;
 
   // Línea principal (código + horas) y debajo el servicio, para no confundir
-  // turnos de servicios distintos. Si aun con el formato compacto no cupiera
-  // en pantallas muy estrechas, el propio `truncate` recorta el texto: el
-  // resto sigue disponible en el tooltip y en el detalle del turno (un toque).
+  // turnos de servicios distintos. La luna va pegada a la hora de INICIO
+  // (no suelta al final del bloque) para que quede claro que marca dónde
+  // empieza el turno, no el tramo "saliente" del día siguiente. Si aun con
+  // el formato compacto no cupiera en pantallas muy estrechas, el propio
+  // `truncate` recorta el texto: el resto sigue disponible en el tooltip y
+  // en el detalle del turno (un toque).
   const body = (moon: boolean) => (
     <div className="min-w-0 overflow-hidden leading-tight">
       <div className="flex items-center gap-0.5">
@@ -371,7 +375,7 @@ function renderEvent(arg: EventContentArg) {
         <span className="truncate opacity-95">
           {start}–{end}
         </span>
-        {moon && <span className="ml-auto">🌙</span>}
+        {moon && <span className="shrink-0">🌙</span>}
       </div>
       {xp.serviceName && (
         <div className="evt-service truncate text-[0.65rem] font-normal opacity-85">
@@ -381,16 +385,13 @@ function renderEvent(arg: EventContentArg) {
     </div>
   );
 
-  // Distintivo, muy discreto, del tramo "saliente" (día de salida de un
-  // turno nocturno): solo la hora de fin, para no competir visualmente con
-  // el turno que sí empieza ese día. En pantallas estrechas se omite incluso
-  // la palabra "Saliente" para dejarle todo el sitio a la hora.
-  const salienteLabel = (
-    <span className="truncate text-[0.85em] font-normal">
-      <span className="hidden sm:inline">Saliente </span>
-      {end}
-    </span>
-  );
+  // Distintivo del tramo "saliente" (día de salida de un turno nocturno):
+  // prácticamente invisible a propósito (ver `.saliente-half` en
+  // globals.css, que lo pinta con el color neutro de fondo en vez del color
+  // del servicio) para que no compita con el turno que sí empieza ese día.
+  // Solo la hora, sin la palabra "Saliente" ni la luna, que ya va en la
+  // entrada.
+  const salienteLabel = <span className="truncate text-[0.78em] font-normal">{end}</span>;
 
   // Turno nocturno en vista mes: UNA barra continua que cruza los dos días;
   // la mitad derecha (día de salida) lleva el distintivo "Saliente" integrado.
@@ -500,34 +501,22 @@ function PaintPalette({
         </button>
       </div>
 
-      <div className="mb-4 flex flex-wrap gap-2">
-        {services.map((s) => {
-          const active = s.id === serviceId;
-          return (
-            <button
-              key={s.id}
-              onClick={() => selectService(s.id)}
-              className={cn(
-                "flex items-center gap-2 rounded-xl border px-3 py-1.5 text-sm",
-                "transition-all duration-150 active:scale-95",
-                active
-                  ? "text-white shadow-md"
-                  : "bg-white hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-sm dark:bg-slate-800 dark:hover:bg-slate-700",
-              )}
-              style={
-                active
-                  ? { background: s.color, borderColor: s.color }
-                  : { borderColor: "var(--border)" }
-              }
-            >
-              <span
-                className="h-2.5 w-2.5 rounded-full"
-                style={{ background: active ? "#fff" : s.color }}
-              />
+      <div className="mb-4 flex items-center gap-2">
+        <span
+          className="h-3 w-3 shrink-0 rounded-full"
+          style={{ background: service?.color ?? "var(--muted)" }}
+        />
+        <select
+          className="select"
+          value={serviceId}
+          onChange={(e) => selectService(e.target.value)}
+        >
+          {services.map((s) => (
+            <option key={s.id} value={s.id}>
               {s.name}
-            </button>
-          );
-        })}
+            </option>
+          ))}
+        </select>
       </div>
 
       {service && (
@@ -607,12 +596,14 @@ function PaintPalette({
 }
 
 /**
- * Barra compacta de "modo pintar" para móvil en horizontal: sustituye al
- * menú de navegación (oculto por falta de altura) para que pintar turnos
- * sea accesible con una sola mano sin tener que volver a vertical.
- * Solo es visible vía CSS (.landscape-toolbar) en esa orientación.
+ * Panel lateral izquierdo de "modo pintar" para móvil en horizontal:
+ * sustituye a la cabecera y al menú de navegación (ocultos por falta de
+ * altura, ver .app-nav-collapse/.landscape-hide) para que el calendario
+ * ocupe el resto de la pantalla y se pueda pintar y ver los turnos a la
+ * vez, sin una barra encima que tape turnos. Solo es visible vía CSS
+ * (.landscape-sidebar) en esa orientación.
  */
-function LandscapePaintBar({
+function LandscapeSidebar({
   services,
   brush,
   onPick,
@@ -632,19 +623,20 @@ function LandscapePaintBar({
   // termina, deja un transform matriz (identidad) aplicado por el fill-mode
   // de la animación, y eso convierte a ese div en el marco de referencia de
   // cualquier "position: fixed" dentro de él (en vez del viewport). Por eso
-  // la barra necesita un portal directo a <body>.
+  // el panel necesita un portal directo a <body>.
   const isClient = useIsClient();
   if (!isClient) return null;
 
   if (!paintMode) {
     return createPortal(
-      <div className="landscape-toolbar fixed inset-x-0 bottom-0 z-40 border-t bg-white/95 backdrop-blur-md dark:bg-slate-900/95">
+      <div className="landscape-sidebar fixed inset-y-0 left-0 z-40 flex-col items-center justify-center border-r bg-white/95 backdrop-blur-md dark:bg-slate-900/95">
         <button
           onClick={onTogglePaint}
           disabled={services.length === 0}
-          className="btn btn-primary w-full rounded-none py-3"
+          className="btn btn-primary flex-col gap-1.5 px-3 py-4"
         >
-          <Paintbrush size={16} /> Modo pintar
+          <Paintbrush size={20} />
+          <span className="text-xs">Pintar</span>
         </button>
       </div>,
       document.body,
@@ -652,51 +644,60 @@ function LandscapePaintBar({
   }
 
   return createPortal(
-    <div className="landscape-toolbar fixed inset-x-0 bottom-0 z-40 items-center gap-1.5 overflow-x-auto border-t bg-white/95 px-2 py-1.5 backdrop-blur-md dark:bg-slate-900/95">
-      <button onClick={onTogglePaint} className="btn btn-outline shrink-0 px-2 py-1.5 text-xs" title="Salir del modo pintar">
-        <X size={14} />
+    <div className="landscape-sidebar fixed inset-y-0 left-0 z-40 flex-col gap-2 overflow-y-auto border-r bg-white/95 p-2 backdrop-blur-md dark:bg-slate-900/95">
+      <button
+        onClick={onTogglePaint}
+        className="btn btn-outline w-full shrink-0 px-2 py-1.5 text-xs"
+        title="Salir del modo pintar"
+      >
+        <X size={14} /> Salir
       </button>
-      {services.map((s) => {
-        const active = s.id === service?.id;
-        return (
-          <button
-            key={s.id}
-            onClick={() => {
-              setServiceId(s.id);
-              onPick(null);
-            }}
-            className={cn(
-              "shrink-0 rounded-lg border px-2 py-1.5 text-xs font-medium",
-              active ? "text-white" : "bg-white dark:bg-slate-800",
-            )}
-            style={active ? { background: s.color, borderColor: s.color } : { borderColor: "var(--border)" }}
-          >
-            {s.name}
-          </button>
-        );
-      })}
-      {service && service.templates.length > 0 && (
-        <span className="mx-1 h-5 w-px shrink-0 bg-[var(--border)]" />
-      )}
-      {service?.templates.map((t) => {
-        const active = brush?.template.id === t.id && brush?.serviceId === service.id;
-        return (
-          <button
-            key={t.id}
-            onClick={() =>
-              onPick({ serviceId: service.id, serviceName: service.name, color: service.color, template: t })
-            }
-            className={cn("shrink-0 rounded-lg border px-2 py-1.5 text-xs font-medium", active && "text-white")}
-            style={
-              active
-                ? { background: service.color, borderColor: service.color }
-                : { borderColor: service.color, color: service.color }
-            }
-          >
-            <span className="font-bold">{t.code}</span> {t.start}–{t.end}
-          </button>
-        );
-      })}
+
+      <div className="flex shrink-0 items-center gap-1.5">
+        <span
+          className="h-2.5 w-2.5 shrink-0 rounded-full"
+          style={{ background: service?.color ?? "var(--muted)" }}
+        />
+        <select
+          className="select py-1.5 text-xs"
+          value={serviceId}
+          onChange={(e) => {
+            setServiceId(e.target.value);
+            onPick(null);
+          }}
+        >
+          {services.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="flex flex-col gap-1.5 overflow-y-auto">
+        {service?.templates.map((t) => {
+          const active = brush?.template.id === t.id && brush?.serviceId === service.id;
+          return (
+            <button
+              key={t.id}
+              onClick={() =>
+                onPick({ serviceId: service.id, serviceName: service.name, color: service.color, template: t })
+              }
+              className={cn(
+                "w-full shrink-0 rounded-lg border px-2 py-1.5 text-left text-xs font-medium",
+                active && "text-white",
+              )}
+              style={
+                active
+                  ? { background: service.color, borderColor: service.color }
+                  : { borderColor: service.color, color: service.color }
+              }
+            >
+              <span className="font-bold">{t.code}</span> {t.start}–{t.end}
+            </button>
+          );
+        })}
+      </div>
     </div>,
     document.body,
   );

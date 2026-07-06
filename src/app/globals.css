@@ -324,21 +324,25 @@
   padding-right: 0;
 }
 
-/* Mitad "Saliente" de un turno nocturno: el color se desvanece hacia la
-   derecha (en vez de rayado), marcando visualmente que es el día de salida.
-   Además baja de opacidad para llamar mucho menos la atención que el turno
-   que sí empieza ese día; al pasar el ratón se recupera para poder leerla. */
+/* Mitad "Saliente" de un turno nocturno: prácticamente invisible a
+   propósito. En vez de atenuar el color del servicio (que seguía llamando
+   la atención), lo tapamos con el color neutro de fondo de una tarjeta —
+   así se funde con el resto del calendario y el turno que sí empieza ese
+   día es el único que destaca. Al pasar el ratón se revela para poder
+   leer la hora de fin. */
 .fc-event .saliente-half {
-  background-image: linear-gradient(to right, transparent, var(--scrim) 90%);
+  background: var(--surface-hover);
+  color: var(--muted);
   border-radius: 0 6px 6px 0;
   margin: -1px 0; /* cubre también el padding vertical del evento */
   padding-top: 1px;
   padding-bottom: 1px;
-  opacity: 0.55;
-  transition: opacity 0.15s;
+  opacity: 0.8;
+  transition: opacity 0.15s, background-color 0.15s;
 }
 .fc-event:hover .saliente-half {
-  opacity: 0.9;
+  opacity: 1;
+  background: var(--surface-muted);
 }
 
 /* Modo pintar: cursor y feedback al pasar por los días */
@@ -376,23 +380,27 @@
   }
 }
 
-.landscape-toolbar {
+.landscape-sidebar {
   display: none;
 }
 
-/* Móvil en horizontal: muy poca altura disponible. Ocultamos la cabecera y
-   la barra de pestañas (o el sidebar, si el ancho ya cruzó el breakpoint
-   md) para dejar sitio a la barra compacta de "modo pintar" del calendario. */
+/* Móvil en horizontal: muy poca altura disponible. Ocultamos la cabecera, la
+   barra de pestañas (o el sidebar, si el ancho ya cruzó el breakpoint md) y
+   la cabecera del calendario, y dejamos un panel fijo a la izquierda con el
+   modo pintar: así el calendario ocupa el resto de la pantalla y se puede
+   pintar y ver los turnos a la vez, en vez de tapar turnos con una barra. */
 @media (orientation: landscape) and (max-height: 500px) {
   .app-nav-collapse {
     display: none !important;
   }
   .app-main {
-    padding-bottom: 3.5rem;
+    padding-left: 11rem;
     padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
   }
-  .landscape-toolbar {
+  .landscape-sidebar {
     display: flex;
+    width: 11rem;
   }
   .landscape-hide {
     display: none !important;
