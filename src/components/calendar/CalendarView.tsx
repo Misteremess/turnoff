@@ -547,7 +547,7 @@ function PaintPalette({
                   style={
                     active
                       ? { background: service.color, borderColor: service.color }
-                      : { borderColor: service.color, color: service.color }
+                      : { color: service.color }
                   }
                 >
                   <span className="font-bold">{t.code}</span> {t.start}–{t.end}
@@ -690,7 +690,7 @@ function LandscapeSidebar({
               style={
                 active
                   ? { background: service.color, borderColor: service.color }
-                  : { borderColor: service.color, color: service.color }
+                  : { color: service.color }
               }
             >
               <span className="font-bold">{t.code}</span> {t.start}–{t.end}
