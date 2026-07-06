@@ -396,15 +396,15 @@ function renderEvent(arg: EventContentArg) {
   // Turno nocturno en vista mes: UNA barra continua que cruza los dos días;
   // la mitad derecha (día de salida) lleva el distintivo "Saliente" integrado.
   if (xp.overnight && isMonth) {
-    // Barra completa (entrada y salida en la misma semana). Las dos mitades
-    // van a ras (sin padding externo ni hueco) para que el rayado empiece
-    // exactamente en la frontera entre los dos días. La entrada (con el
-    // código y las horas) se lleva el doble de espacio: es el turno que
-    // importa ese día, la salida es solo informativa.
+    // Barra completa (entrada y salida en la misma semana). Cada día ocupa
+    // una columna del mismo ancho en la cuadrícula del mes, así que las dos
+    // mitades tienen que repartirse el mismo 50/50 — si no, el degradado
+    // del "saliente" (que empieza justo al principio de su mitad) queda
+    // desplazado de la raya real que separa los dos días.
     if (isStart && isEnd) {
       return (
         <div className="flex w-full items-stretch overflow-hidden" title={`${title} (nocturno)`}>
-          <span className="min-w-0 flex-[2] px-1">{body(true)}</span>
+          <span className="min-w-0 flex-1 px-1">{body(true)}</span>
           <span className="saliente-half flex min-w-0 flex-1 items-center justify-center px-1">
             {salienteLabel}
           </span>
