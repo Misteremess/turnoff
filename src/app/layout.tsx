@@ -18,7 +18,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className={`${geistSans.variable} h-full antialiased`}>
+    <html
+      lang="es"
+      className={`${geistSans.variable} h-full antialiased`}
+      // El script de abajo añade data-theme antes de hidratar (para no dar
+      // un flash con el tema por defecto), a propósito distinto de lo que
+      // el servidor renderizó — sin esto React lo marca como mismatch.
+      suppressHydrationWarning
+    >
       <body className="min-h-full">
         {/* Aplica el tema guardado antes de pintar, para no dar un flash
             con el tema por defecto y luego saltar al elegido por el usuario. */}

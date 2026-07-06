@@ -386,6 +386,9 @@
   color: #fff;
   box-shadow: 0 1px 2px rgb(0 0 0 / 0.12);
   transition: transform 0.12s, box-shadow 0.12s, filter 0.12s;
+  /* Sin esto, un hijo (p.ej. .saliente-half) puede asomar por fuera de la
+     esquina redondeada y dejar un filo del color de fondo del turno. */
+  overflow: hidden;
 }
 .fc-event:hover {
   transform: translateY(-1px);
@@ -407,15 +410,18 @@
 }
 
 /* Mitad "Saliente" de un turno nocturno: el color del turno se desvanece
-   MUY deprisa justo a partir de la raya que separa los dos días (el
-   `transparent` del gradiente deja ver el color de fondo del propio
-   `.fc-event`, y a partir de ahí lo tapamos con el fondo real del
-   calendario) — así el turno solo "asoma" un poco en el día de salida y el
-   resto de la celda queda prácticamente libre, en vez de un bloque sólido
-   ocupando todo el hueco. Al pasar el ratón se retrasa el desvanecido para
+   MUY deprisa justo a partir de la raya que separa los dos días hacia un
+   cristal esmerilado (translúcido + desenfocado, sin ningún borde) en vez
+   de un bloque sólido o un hueco transparente a secas — así el turno solo
+   "asoma" un poco en el día de salida y el resto de la celda queda
+   prácticamente libre. Al pasar el ratón se retrasa el desvanecido para
    poder leer la hora de fin. */
 .fc-event .saliente-half {
-  background: linear-gradient(to right, transparent, var(--fc-page-bg-color) 22%);
+  background: linear-gradient(
+    to right,
+    transparent,
+    color-mix(in srgb, var(--fc-page-bg-color) 70%, transparent) 22%
+  );
   color: var(--muted);
   border-radius: 0 6px 6px 0;
   margin: -1px 0; /* cubre también el padding vertical del evento */
@@ -424,7 +430,11 @@
   transition: background 0.15s;
 }
 .fc-event:hover .saliente-half {
-  background: linear-gradient(to right, transparent, var(--fc-page-bg-color) 60%);
+  background: linear-gradient(
+    to right,
+    transparent,
+    color-mix(in srgb, var(--fc-page-bg-color) 70%, transparent) 60%
+  );
 }
 
 /* Modo pintar: cursor y feedback al pasar por los días */
