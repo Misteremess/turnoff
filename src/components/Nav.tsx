@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { CalendarDays, Briefcase, BarChart3, LogOut, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "./ThemeToggle";
 
 const links = [
   { href: "/", label: "Calendario", icon: CalendarDays },
@@ -19,7 +20,7 @@ function Logo({ size = "md" }: { size?: "sm" | "md" }) {
         "flex items-center justify-center rounded-xl text-white shadow-lg shadow-blue-600/30",
         size === "sm" ? "h-8 w-8" : "h-10 w-10",
       )}
-      style={{ background: "linear-gradient(135deg, #3b82f6, #4f46e5)" }}
+      style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-strong))" }}
     >
       <ShieldCheck size={size === "sm" ? 17 : 21} />
     </span>
@@ -53,13 +54,16 @@ export function Nav({ email }: { email: string | null }) {
             </p>
           </div>
         </div>
-        <button
-          onClick={signOut}
-          aria-label="Cerrar sesión"
-          className="rounded-xl p-2 text-[var(--muted)] transition-colors hover:bg-slate-100 active:scale-95 dark:hover:bg-slate-800"
-        >
-          <LogOut size={18} />
-        </button>
+        <div className="flex items-center gap-2">
+          <ThemeToggle className="w-28" />
+          <button
+            onClick={signOut}
+            aria-label="Cerrar sesión"
+            className="rounded-xl p-2 text-[var(--muted)] transition-colors hover:bg-slate-100 active:scale-95 dark:hover:bg-slate-800"
+          >
+            <LogOut size={18} />
+          </button>
+        </div>
       </header>
 
       {/* Escritorio: sidebar */}
@@ -88,7 +92,7 @@ export function Nav({ email }: { email: string | null }) {
                 )}
                 style={
                   active
-                    ? { background: "linear-gradient(135deg, #3b82f6, #4f46e5)" }
+                    ? { background: "linear-gradient(135deg, var(--primary), var(--primary-strong))" }
                     : undefined
                 }
               >
@@ -111,6 +115,7 @@ export function Nav({ email }: { email: string | null }) {
               {email}
             </p>
           )}
+          <ThemeToggle className="mb-2" />
           <button onClick={signOut} className="btn btn-outline w-full">
             <LogOut size={16} /> Cerrar sesión
           </button>

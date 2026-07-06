@@ -46,7 +46,7 @@ export default function LoginPage() {
       <div className="animate-pop card relative w-full max-w-sm p-8 text-center">
         <span
           className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl text-white shadow-lg shadow-blue-600/35"
-          style={{ background: "linear-gradient(135deg, #3b82f6, #4f46e5)" }}
+          style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-strong))" }}
         >
           <ShieldCheck size={30} />
         </span>

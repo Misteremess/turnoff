@@ -1,6 +1,14 @@
 @import "tailwindcss";
 
-:root {
+/*
+ * Temas: "Automático" sigue prefers-color-scheme (bloque @media de abajo).
+ * Elegir un tema explícito en el selector (ver ThemeToggle) pone
+ * data-theme en <html> y esos valores ganan siempre, tanto si coinciden
+ * con la preferencia del sistema como si no.
+ */
+:root,
+[data-theme="light"] {
+  color-scheme: light;
   --background: #f4f6fb;
   --surface: #ffffff;
   --surface-hover: #f8fafc;
@@ -24,7 +32,8 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme]) {
+    color-scheme: dark;
     --background: #0a0f1c;
     --surface: #111827;
     --surface-hover: #1e293b;
@@ -47,6 +56,79 @@
   }
 }
 
+[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #0a0f1c;
+  --surface: #111827;
+  --surface-hover: #1e293b;
+  --surface-muted: #1a2333;
+  --foreground: #e5e9f2;
+  --muted: #8996ac;
+  --border: #232f45;
+  --primary: #3b82f6;
+  --primary-strong: #60a5fa;
+  --primary-soft: rgb(59 130 246 / 0.16);
+  --primary-fg: #ffffff;
+  --danger: #f87171;
+  --danger-soft: rgb(248 113 113 / 0.12);
+  --success: #4ade80;
+  --ring: rgb(59 130 246 / 0.5);
+  --scrim: rgb(2 6 23 / 0.5);
+  --overlay: rgb(0 0 0 / 0.6);
+  --scrollbar-thumb: #334155;
+  --scrollbar-thumb-hover: #475569;
+}
+
+/* Negro puro (AMOLED): igual que Oscuro pero sin el tinte azulado, para
+   pantallas OLED y quien prefiera el máximo contraste. */
+[data-theme="black"] {
+  color-scheme: dark;
+  --background: #000000;
+  --surface: #0d0d0d;
+  --surface-hover: #1a1a1a;
+  --surface-muted: #131313;
+  --foreground: #f2f2f2;
+  --muted: #8f8f8f;
+  --border: #262626;
+  --primary: #3b82f6;
+  --primary-strong: #60a5fa;
+  --primary-soft: rgb(59 130 246 / 0.16);
+  --primary-fg: #ffffff;
+  --danger: #f87171;
+  --danger-soft: rgb(248 113 113 / 0.12);
+  --success: #4ade80;
+  --ring: rgb(59 130 246 / 0.5);
+  --scrim: rgb(0 0 0 / 0.6);
+  --overlay: rgb(0 0 0 / 0.75);
+  --scrollbar-thumb: #2b2b2b;
+  --scrollbar-thumb-hover: #3d3d3d;
+}
+
+/* Gris neutro: misma familia oscura que "Oscuro" pero sin tinte azulado
+   en los fondos, para quien prefiera un gris más neutro. */
+[data-theme="gray"] {
+  color-scheme: dark;
+  --background: #1b1c1e;
+  --surface: #232427;
+  --surface-hover: #2b2c30;
+  --surface-muted: #28292c;
+  --foreground: #e7e8ea;
+  --muted: #97989c;
+  --border: #38393d;
+  --primary: #3b82f6;
+  --primary-strong: #60a5fa;
+  --primary-soft: rgb(59 130 246 / 0.16);
+  --primary-fg: #ffffff;
+  --danger: #f87171;
+  --danger-soft: rgb(248 113 113 / 0.12);
+  --success: #4ade80;
+  --ring: rgb(59 130 246 / 0.5);
+  --scrim: rgb(27 28 30 / 0.55);
+  --overlay: rgb(0 0 0 / 0.6);
+  --scrollbar-thumb: #46474b;
+  --scrollbar-thumb-hover: #58595d;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);
@@ -64,7 +146,7 @@
 
   html {
     scroll-behavior: smooth;
-    color-scheme: light dark;
+    /* color-scheme se fija por tema en :root/[data-theme] más arriba. */
   }
 
   body {
@@ -162,7 +244,7 @@
     outline-offset: 2px;
   }
   .btn-primary {
-    background: linear-gradient(135deg, #3b82f6, var(--primary-strong));
+    background: linear-gradient(135deg, var(--primary), var(--primary-strong));
     color: var(--primary-fg);
     box-shadow: 0 4px 14px rgb(37 99 235 / 0.3);
   }
@@ -252,7 +334,7 @@
 }
 .fc .fc-button-primary:not(:disabled).fc-button-active,
 .fc .fc-button-primary:not(:disabled):active {
-  background: linear-gradient(135deg, #3b82f6, var(--primary-strong));
+  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
   border-color: transparent;
   color: #fff;
   box-shadow: 0 2px 10px rgb(37 99 235 / 0.35);
@@ -289,7 +371,7 @@
   margin: 2px;
   padding: 0;
   border-radius: 9999px;
-  background: linear-gradient(135deg, #3b82f6, var(--primary-strong));
+  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
   color: #fff;
   font-weight: 700;
   box-shadow: 0 2px 8px rgb(37 99 235 / 0.4);
@@ -324,25 +406,25 @@
   padding-right: 0;
 }
 
-/* Mitad "Saliente" de un turno nocturno: prácticamente invisible a
-   propósito. En vez de atenuar el color del servicio (que seguía llamando
-   la atención), lo tapamos con el color neutro de fondo de una tarjeta —
-   así se funde con el resto del calendario y el turno que sí empieza ese
-   día es el único que destaca. Al pasar el ratón se revela para poder
-   leer la hora de fin. */
+/* Mitad "Saliente" de un turno nocturno: el color del turno se desvanece
+   MUY deprisa justo a partir de la raya que separa los dos días (el
+   `transparent` del gradiente deja ver el color de fondo del propio
+   `.fc-event`, y a partir de ahí lo tapamos con el fondo real del
+   calendario) — así el turno solo "asoma" un poco en el día de salida y el
+   resto de la celda queda prácticamente libre, en vez de un bloque sólido
+   ocupando todo el hueco. Al pasar el ratón se retrasa el desvanecido para
+   poder leer la hora de fin. */
 .fc-event .saliente-half {
-  background: var(--surface-hover);
+  background: linear-gradient(to right, transparent, var(--fc-page-bg-color) 22%);
   color: var(--muted);
   border-radius: 0 6px 6px 0;
   margin: -1px 0; /* cubre también el padding vertical del evento */
   padding-top: 1px;
   padding-bottom: 1px;
-  opacity: 0.8;
-  transition: opacity 0.15s, background-color 0.15s;
+  transition: background 0.15s;
 }
 .fc-event:hover .saliente-half {
-  opacity: 1;
-  background: var(--surface-muted);
+  background: linear-gradient(to right, transparent, var(--fc-page-bg-color) 60%);
 }
 
 /* Modo pintar: cursor y feedback al pasar por los días */

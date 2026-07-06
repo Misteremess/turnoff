@@ -429,7 +429,7 @@ function StatCard({
           "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl",
           accent ? "text-white shadow-md shadow-blue-600/25" : "bg-[var(--surface-muted)] text-slate-500 dark:text-slate-400",
         )}
-        style={accent ? { background: "linear-gradient(135deg, #3b82f6, #4f46e5)" } : undefined}
+        style={accent ? { background: "linear-gradient(135deg, var(--primary), var(--primary-strong))" } : undefined}
       >
         <Icon size={22} />
       </span>

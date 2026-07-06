@@ -194,7 +194,7 @@ function ServiceModal({
 
         <div>
           <label className="label">Color</label>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {colors.map((c) => (
               <button
                 type="button"
@@ -205,6 +205,25 @@ function ServiceModal({
                 aria-label={`Color ${c}`}
               />
             ))}
+            {/* Color personalizado: cualquier tono, no solo la paleta preestablecida. */}
+            <label
+              className="relative flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-2 border-dashed text-sm leading-none"
+              style={
+                colors.includes(color)
+                  ? { borderColor: "var(--border)", color: "var(--muted)" }
+                  : { borderColor: color, background: color, boxShadow: `0 0 0 2px ${color}` }
+              }
+              title="Color personalizado"
+            >
+              <input
+                type="color"
+                value={color}
+                onChange={(e) => setColor(e.target.value)}
+                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                aria-label="Elegir color personalizado"
+              />
+              {colors.includes(color) && "+"}
+            </label>
           </div>
         </div>
 
